@@ -19,10 +19,11 @@ const YARN_SCRIPTS = [
 async function test_static() {
   return new Promise((resolve, reject) => {
     try {
-      const start = performance.now();
-      console.log("clearing node_modules...");
-      execSync("rm -rf node_modules");
-      console.log(`${getDuration(start, performance.now())}s`);
+      // disabled for now, as this breaks the hot-reload test
+      // const s = performance.now();
+      // console.log("clearing node_modules...");
+      // execSync("rm -rf node_modules");
+      // console.log(`${getDuration(s, performance.now())}s`);
 
       for (const args of YARN_SCRIPTS) {
         const start = performance.now();
@@ -47,12 +48,12 @@ async function test_dev() {
 
   function handleMessage(data) {
     if (!data.toString().match(searchRegExp)) return;
-    process.stderr.off("data", handleMessage);
+    process.stderr.removeListener("data", handleMessage);
     console.log(`${getDuration(start, performance.now())}s`);
     test_hotreload(process);
   }
 
-  process.stderr.on("data", handleMessage);
+  process.stderr.addListener("data", handleMessage);
 }
 
 async function test_hotreload(process) {
@@ -60,6 +61,7 @@ async function test_hotreload(process) {
   process.stderr.on("data", (data) => {
     if (!data.toString().match(searchRegExp)) return;
     console.log(`${getDuration(start, performance.now())}s`);
+    process.stderr.removeAllListeners();
     process.kill();
     exec(`git checkout ${FILE_PATH}`);
   });
@@ -72,5 +74,5 @@ async function test_hotreload(process) {
 
 (async () => {
   await test_static();
-  await test_dev();
+  test_dev();
 })();
