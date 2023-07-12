@@ -30,6 +30,7 @@ async function test_static() {
         console.log(`yarn ${args.join(" ")}...`);
         spawnSync("yarn", args, {
           stdio: ["ignore", "pipe", "pipe"],
+          shell: true,
         });
         console.log(`${getDuration(start, performance.now())}s`);
       }
@@ -42,7 +43,7 @@ async function test_static() {
 
 async function test_dev() {
   const searchRegExp = new RegExp(/imports crawl ended/);
-  const process = spawn("yarn", ["dev", "--debug"]);
+  const process = spawn("yarn", ["dev", "--debug"], { shell: true });
   const start = performance.now();
   console.log("yarn dev...");
 
