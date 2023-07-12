@@ -1,5 +1,5 @@
 import fs from "node:fs/promises";
-import { spawn, spawnSync, exec } from "node:child_process";
+import { spawn, spawnSync, exec, execSync } from "node:child_process";
 
 function getDuration(start, end) {
   return ((end - start) / 1000).toFixed(2);
@@ -19,7 +19,11 @@ const YARN_SCRIPTS = [
 async function test_static() {
   return new Promise((resolve, reject) => {
     try {
-      exec("rm -rf node_modules");
+      const start = performance.now();
+      console.log("clearing node_modules...");
+      execSync("rm -rf node_modules");
+      console.log(`${getDuration(start, performance.now())}s`);
+
       for (const args of YARN_SCRIPTS) {
         const start = performance.now();
         console.log(`yarn ${args.join(" ")}...`);
