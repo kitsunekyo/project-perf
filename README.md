@@ -1,5 +1,7 @@
 # project-perf
 
+does some crude frontend tooling benchmarks to compare machine performance for our project.
+
 requires node18, no package dependencies
 
 1. clone with git
