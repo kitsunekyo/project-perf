@@ -28,6 +28,8 @@ function debounce(cb, wait = 5000) {
 
 async function test_static() {
   return new Promise((resolve) => {
+    deleteNodeModules();
+
     for (const script of SCRIPTS) {
       const [command, args] = script;
       const start = performance.now();
@@ -40,6 +42,15 @@ async function test_static() {
     }
     resolve();
   });
+}
+
+function deleteNodeModules() {
+  const start = performance.now();
+  console.log(`deleting node_modules...`);
+  spawnSync("npx", ["rimraf", "node_modules"], {
+    shell: true,
+  });
+  console.log(`${getDuration(start, performance.now())}s`);
 }
 
 async function test_dev() {
