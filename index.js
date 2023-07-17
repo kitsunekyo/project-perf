@@ -18,7 +18,7 @@ function getDuration(start, end) {
   return ((end - start) / 1000).toFixed(2);
 }
 
-function debounce(cb, wait = 5000) {
+function debounce(cb, wait = BACKOFF_TIME_MS) {
   let timeout;
   return (...args) => {
     clearTimeout(timeout);
