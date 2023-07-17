@@ -43,13 +43,15 @@ async function test_static() {
 
 async function test_dev() {
   const searchRegExp = new RegExp(/imports crawl ended/);
-  const process = spawn("yarn", ["dev", "--debug"], { shell: true });
+  const process = spawn("yarn", ["dev", "--debug"], {
+    shell: true,
+    stdio: "pipe",
+  });
   const start = performance.now();
   console.log("yarn dev...");
 
   function handleMessage(data) {
     if (!data.toString().match(searchRegExp)) return;
-    process.stderr.removeListener("data", handleMessage);
     console.log(`${getDuration(start, performance.now())}s`);
     test_hotreload(process);
   }
@@ -58,18 +60,17 @@ async function test_dev() {
 }
 
 async function test_hotreload(process) {
-  const searchRegExp = new RegExp(/vite:time .* \/src\/app\/App.tsx/);
+  const searchRegExp = new RegExp(/vite:time.*\/src\/app\/App.tsx/g);
+  const start = performance.now();
   process.stderr.on("data", (data) => {
     if (!data.toString().match(searchRegExp)) return;
     console.log(`${getDuration(start, performance.now())}s`);
-    process.stderr.removeAllListeners();
     process.kill();
     exec(`git checkout ${FILE_PATH}`);
   });
   const content = await fs.readFile(FILE_PATH, "utf-8");
-  const start = performance.now();
   console.log("hot-reload...");
-  const updatedContent = content.replace("Sitelife", "TEST");
+  const updatedContent = content.replace("Sitelife", Math.random());
   fs.writeFile(FILE_PATH, updatedContent);
 }
 
