@@ -8,6 +8,7 @@ requires node18, no package dependencies
 
 example
 
-```
+```bash
+cd C:\Users\Alex\code\sitelife\client
 node C:\Users\Alex\code\project-perf
 ```
