@@ -7,13 +7,15 @@ function getDuration(start, end) {
 
 const FILE_PATH = "src/app/App.tsx";
 
+const BACKOFF_TIME_MS = 5000;
+
 const YARN_SCRIPTS = [
   ["install"],
-  ["build"],
-  ["test", "run"],
-  ["lint"],
-  ["format"],
-  ["tsc", "--noEmit"],
+  // ["build"],
+  // ["test", "run"],
+  // ["lint"],
+  // ["format"],
+  // ["tsc", "--noEmit"],
 ];
 
 async function test_static() {
@@ -42,36 +44,63 @@ async function test_static() {
 }
 
 async function test_dev() {
-  const searchRegExp = new RegExp(/imports crawl ended/);
-  const process = spawn("yarn", ["dev", "--debug"], {
-    shell: true,
-    stdio: "pipe",
-  });
-  const start = performance.now();
   console.log("yarn dev...");
+  const searchRegExp = new RegExp(/imports crawl ended/gi);
+  const controller = new AbortController();
+  const child = spawn("yarn", ["dev", "--debug"], {
+    shell: true,
+    stdio: ["pipe", "pipe", "pipe"],
+    signal: controller.signal,
+  });
+  if (!child) {
+    throw new Error("Failed to spawn yarn dev process");
+  }
+  const start = performance.now();
+
+  let timeout;
 
   function handleMessage(data) {
-    if (!data.toString().match(searchRegExp)) return;
-    console.log(`${getDuration(start, performance.now())}s`);
-    test_hotreload(process);
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      console.log("didnt receive input for 5s assuming dev server is ready");
+      child.stderr.removeListener("data", handleMessage);
+      console.log(
+        `${getDuration(start, performance.now() - BACKOFF_TIME_MS)}s`
+      );
+      test_hotreload(child, controller);
+    }, BACKOFF_TIME_MS);
   }
 
-  process.stderr.addListener("data", handleMessage);
+  child.stderr.addListener("data", handleMessage);
 }
 
-async function test_hotreload(process) {
-  const searchRegExp = new RegExp(/vite:time.*\/src\/app\/App.tsx/g);
-  const start = performance.now();
-  process.stderr.on("data", (data) => {
-    if (!data.toString().match(searchRegExp)) return;
-    console.log(`${getDuration(start, performance.now())}s`);
-    process.kill();
-    exec(`git checkout ${FILE_PATH}`);
-  });
-  const content = await fs.readFile(FILE_PATH, "utf-8");
+async function test_hotreload(childProcess, controller) {
   console.log("hot-reload...");
+
+  let timeout;
+  function handleMessage(data) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      console.log(
+        `${getDuration(start, performance.now() - BACKOFF_TIME_MS)}s`
+      );
+      exec(`git checkout ${FILE_PATH}`);
+      process.exit(0);
+    }, BACKOFF_TIME_MS);
+  }
+  childProcess.stderr.addListener("data", handleMessage);
+  const start = performance.now();
+  const content = await fs.readFile(FILE_PATH, "utf-8");
   const updatedContent = content.replace("Sitelife", Math.random());
   fs.writeFile(FILE_PATH, updatedContent);
+}
+
+function backoff(cb, timeout = BACKOFF_TIME_MS) {
+  let timeout;
+  return () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(cb, timeout);
+  };
 }
 
 (async () => {
