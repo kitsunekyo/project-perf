@@ -6,7 +6,6 @@ const FILE_PATH = "src/app/App.tsx";
 const BACKOFF_TIME_MS = 5000;
 
 const SCRIPTS = [
-  ["rm", ["-r", "node_modules"]],
   ["yarn", ["install"]],
   ["yarn", ["build"]],
   ["yarn", ["test", "run"]],
